@@ -2,8 +2,9 @@
 
 import { redirect } from "next/navigation";
 
-import { createClient } from "@/lib/supabase/server";
 import { safeErrorLog } from "@/lib/logger";
+import { hasSupabaseEnv } from "@/lib/supabase/env";
+import { createClient } from "@/lib/supabase/server";
 import { parseLoginPayload } from "@/services/auth";
 
 export type LoginFormState = {
@@ -13,6 +14,13 @@ export type LoginFormState = {
 
 export async function loginAction(_: LoginFormState, formData: FormData): Promise<LoginFormState> {
   try {
+    if (!hasSupabaseEnv()) {
+      return {
+        success: false,
+        message: "Faltan variables de Supabase en el entorno de despliegue.",
+      };
+    }
+
     const payload = parseLoginPayload(formData);
     const supabase = await createClient();
 
@@ -24,7 +32,7 @@ export async function loginAction(_: LoginFormState, formData: FormData): Promis
     if (error) {
       return {
         success: false,
-        message: "No fue posible iniciar sesión. Verifica tus credenciales.",
+        message: "No fue posible iniciar sesion. Verifica tus credenciales.",
       };
     }
   } catch (error) {
@@ -32,7 +40,7 @@ export async function loginAction(_: LoginFormState, formData: FormData): Promis
 
     return {
       success: false,
-      message: "Solicitud inválida. Revisa los datos ingresados.",
+      message: "Solicitud invalida. Revisa los datos ingresados.",
     };
   }
 

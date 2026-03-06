@@ -1,7 +1,9 @@
-import { updateSession } from "@/lib/supabase/middleware";
-import { canAccessPath, resolveRole } from "@/lib/auth/guards";
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+
+import { canAccessPath, resolveRole } from "@/lib/auth/guards";
+import { hasSupabaseEnv } from "@/lib/supabase/env";
+import { updateSession } from "@/lib/supabase/middleware";
 
 const PUBLIC_PATHS = ["/login", "/unauthorized"];
 
@@ -22,12 +24,17 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!hasSupabaseEnv()) {
+    // Decision: avoid redirect loops when env is missing; allow /login to render config hint.
+    if (pathname === "/login") {
+      return response;
+    }
 
-  if (!supabaseUrl || !supabaseAnonKey) {
     return NextResponse.redirect(new URL("/login?error=missing_env", request.url));
   }
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {

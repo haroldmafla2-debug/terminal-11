@@ -1,6 +1,7 @@
 import { resolveRole } from "@/lib/auth/guards";
-import { createClient } from "@/lib/supabase/server";
 import type { PortalRole } from "@/lib/constants/roles";
+import { hasSupabaseEnv } from "@/lib/supabase/env";
+import { createClient } from "@/lib/supabase/server";
 
 export type AuthContext = {
   role: PortalRole;
@@ -9,6 +10,10 @@ export type AuthContext = {
 };
 
 export async function getAuthContext(): Promise<AuthContext | null> {
+  if (!hasSupabaseEnv()) {
+    return null;
+  }
+
   const supabase = await createClient();
   const {
     data: { user },
