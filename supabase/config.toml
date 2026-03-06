@@ -1,0 +1,5 @@
+project_id = "portal-web-escolar"
+
+[db]
+seed.enabled = true
+seed.sql_paths = ["./seed.sql"]

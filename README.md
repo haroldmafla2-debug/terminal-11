@@ -1,49 +1,49 @@
 # Portal Web Escolar
 
-Portal Web Escolar es una plataforma web production-ready para [COLEGIO], enfocada en gestión académica y comunicación entre administración, docentes, estudiantes y acudientes.
+Portal Web Escolar is a production-ready platform for [COLEGIO], focused on academic operations and communication between admin, teachers, students, and guardians.
 
-## Estado del proyecto
+## Current status
 
-- Milestone actual: `PR1` (setup del repo + auth base + UI base por roles).
+- Milestone: `PR2` (database schema + strict RLS + seed data).
 - Stack: Next.js (App Router) + TypeScript + Tailwind + shadcn/ui + Supabase.
 
-## Suposiciones usadas
+## Assumptions
 
-- Nombre del colegio: `[COLEGIO]`.
-- Año académico inicial: `2026`.
-- Escala de notas: `0.0` a `5.0`.
-- Nota mínima aprobatoria: `3.0`.
-- Periodos: `P1`, `P2`, `P3`, `P4`.
-- En `PR1`, el rol se toma de `app_metadata.role` (fallback a `user_metadata.role`) hasta conectar `profiles` y RLS en `PR2`.
+- School name: `[COLEGIO]`
+- Academic year: `2026`
+- Grade scale: `0.0` to `5.0`
+- Passing grade: `3.0`
+- Periods: `P1`, `P2`, `P3`, `P4`
 
-## Estructura principal
+## Main structure
 
-- `src/app`: rutas App Router (login, dashboard y módulos base por rol).
-- `src/components`: componentes UI y layout.
-- `src/lib`: utilidades, auth guards, Supabase SSR clients.
-- `src/services`: servicios por módulo (PR1 incluye `auth`).
-- `tests/unit`: pruebas unitarias (Vitest).
-- `tests/e2e`: smoke tests (Playwright).
-- `.github/workflows/ci.yml`: pipeline básico para PRs.
+- `src/app`: App Router pages (auth, dashboard, role modules).
+- `src/components`: UI and layout components.
+- `src/lib`: shared utils, auth guards, Supabase clients.
+- `src/services`: module services and zod validation.
+- `supabase/migrations`: SQL migrations.
+- `supabase/seed.sql`: initial seed for local/dev.
+- `tests/unit`: Vitest tests.
+- `tests/e2e`: Playwright smoke tests.
 
-## Setup local
+## Local setup
 
-1. Instalar dependencias:
+1. Install dependencies:
    - `npm install`
-2. Crear entorno local:
-   - `copy .env.example .env.local` (Windows)
-3. Levantar el proyecto:
+2. Configure env:
+   - `copy .env.example .env.local`
+3. Run app:
    - `npm run dev`
 
-## Variables de entorno
+## Environment variables
 
-Definidas en `.env.example`:
+Defined in `.env.example`:
 
 - `NEXT_PUBLIC_APP_NAME`
 - `NEXT_PUBLIC_SCHOOL_NAME`
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY` (uso server-only, no exponer)
+- `SUPABASE_SERVICE_ROLE_KEY` (server-only)
 - `ACADEMIC_YEAR`
 - `GRADE_SCALE_MIN`
 - `GRADE_SCALE_MAX`
@@ -51,55 +51,67 @@ Definidas en `.env.example`:
 
 ## Scripts
 
-- `npm run dev`: desarrollo.
-- `npm run build`: build de producción.
-- `npm run start`: arrancar build.
-- `npm run lint`: lint estricto.
-- `npm run lint:fix`: autofix lint.
-- `npm run typecheck`: chequeo de tipos.
-- `npm run format`: formateo.
-- `npm run format:check`: validación de formato.
-- `npm run test:unit`: unit tests (Vitest).
-- `npm run test:e2e`: smoke tests (Playwright).
-- `npm run test`: unit + e2e.
+- `npm run dev`
+- `npm run build`
+- `npm run start`
+- `npm run lint`
+- `npm run lint:fix`
+- `npm run typecheck`
+- `npm run format`
+- `npm run format:check`
+- `npm run test:unit`
+- `npm run test:e2e`
+- `npm run test`
 
-## Flujo de ramas y commits
+## Supabase DB (PR2)
 
-- Ramas: `main` y `dev`.
-- Feature branches recomendadas: `codex/<scope>-<short-name>`.
-- Commits: Conventional Commits (ej: `feat(auth): add role-based middleware`).
+### Files
 
-## CI (PRs)
+- Migration: `supabase/migrations/20260305220000_pr2_core_schema.sql`
+- Seed: `supabase/seed.sql`
+- Config: `supabase/config.toml`
 
-El workflow ejecuta en pull requests:
+### Run migrations and seed (local CLI)
+
+1. `supabase start`
+2. `supabase db reset`
+
+`supabase db reset` applies all migrations and executes `supabase/seed.sql`.
+
+### Seed credentials (local/dev)
+
+All users use password `Password123*`:
+
+- Admin: `admin@colegio.local`
+- Coordination: `coordinacion@colegio.local`
+- Teacher: `docente@colegio.local`
+- Student: `estudiante@colegio.local`
+- Guardian: `acudiente@colegio.local`
+
+## Security model
+
+- Route/session protection in Next.js middleware.
+- Server-side validation with zod.
+- RLS with least-privilege policies per role.
+- RLS is the final authority for data access.
+
+## Branch and commit strategy
+
+- Main branches: `main`, `dev`
+- Feature branches: `codex/<scope>-<short-name>`
+- Conventional commits required
+
+## CI for pull requests
+
+Workflow in `.github/workflows/ci.yml` runs:
 
 - `npm ci`
 - `npm run lint`
 - `npm run test:unit`
-- `npx playwright install --with-deps chromium`
 - `npm run test:e2e`
 - `npm run build`
 
-## Despliegue
+## Deployment
 
-- Frontend: Vercel.
-- Backend: Supabase (DB/Auth/Storage/Edge Functions).
-
-### Vercel
-
-1. Conectar repositorio.
-2. Configurar variables de entorno de `.env.example`.
-3. Deploy automático sobre `main`.
-
-### Supabase
-
-1. Crear proyecto.
-2. Configurar Auth providers.
-3. Aplicar migraciones (`PR2` en adelante).
-4. Cargar seeds (`PR2` en adelante).
-
-## Guías rápidas
-
-- Ver contribución: `CONTRIBUTING.md`.
-- Reglas de ownership: `.github/CODEOWNERS`.
-- Seguridad: evitar logs con secretos y depender siempre de RLS como autoridad final (a partir de PR2).
+- Frontend: Vercel
+- Backend: Supabase (Postgres, Auth, Storage, Edge Functions)
