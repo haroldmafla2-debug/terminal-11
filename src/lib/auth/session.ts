@@ -1,5 +1,7 @@
+import { cookies } from "next/headers";
+
 import { resolveRole } from "@/lib/auth/guards";
-import type { PortalRole } from "@/lib/constants/roles";
+import { PORTAL_ROLES, type PortalRole } from "@/lib/constants/roles";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 
@@ -7,18 +9,28 @@ export type AuthContext = {
   role: PortalRole;
   email: string;
   userId: string;
+  isGuest: boolean;
 };
 
-const GUEST_CONTEXT: AuthContext = {
-  // Decision: defaulting to student avoids protected admin data queries when auth is disabled.
-  role: "student",
-  email: "invitado@colegio.local",
-  userId: "guest-user",
-};
+function resolveCookieRole(value: string | undefined): PortalRole {
+  if (!value) {
+    return "student";
+  }
+
+  return PORTAL_ROLES.includes(value as PortalRole) ? (value as PortalRole) : "student";
+}
 
 export async function getAuthContext(): Promise<AuthContext> {
+  const cookieStore = await cookies();
+  const cookieRole = resolveCookieRole(cookieStore.get("portal_role")?.value);
+
   if (!hasSupabaseEnv()) {
-    return GUEST_CONTEXT;
+    return {
+      role: cookieRole,
+      email: "invitado@colegio.local",
+      userId: `guest-${cookieRole}`,
+      isGuest: true,
+    };
   }
 
   const supabase = await createClient();
@@ -27,7 +39,12 @@ export async function getAuthContext(): Promise<AuthContext> {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return GUEST_CONTEXT;
+    return {
+      role: cookieRole,
+      email: "invitado@colegio.local",
+      userId: `guest-${cookieRole}`,
+      isGuest: true,
+    };
   }
 
   const rawRole =
@@ -38,5 +55,6 @@ export async function getAuthContext(): Promise<AuthContext> {
     role: resolveRole(rawRole),
     email: user.email ?? "sin-correo@colegio.local",
     userId: user.id,
+    isGuest: false,
   };
 }
