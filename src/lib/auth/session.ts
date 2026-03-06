@@ -9,9 +9,16 @@ export type AuthContext = {
   userId: string;
 };
 
-export async function getAuthContext(): Promise<AuthContext | null> {
+const GUEST_CONTEXT: AuthContext = {
+  // Decision: defaulting to student avoids protected admin data queries when auth is disabled.
+  role: "student",
+  email: "invitado@colegio.local",
+  userId: "guest-user",
+};
+
+export async function getAuthContext(): Promise<AuthContext> {
   if (!hasSupabaseEnv()) {
-    return null;
+    return GUEST_CONTEXT;
   }
 
   const supabase = await createClient();
@@ -20,10 +27,9 @@ export async function getAuthContext(): Promise<AuthContext | null> {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return null;
+    return GUEST_CONTEXT;
   }
 
-  // Decision: metadata role fallback keeps PR1 moving until profiles table exists in PR2.
   const rawRole =
     (user.app_metadata?.role as string | undefined) ??
     (user.user_metadata?.role as string | undefined);
