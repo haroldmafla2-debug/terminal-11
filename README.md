@@ -128,8 +128,8 @@ Ver [docs/DEPLOY_VPS.md](./docs/DEPLOY_VPS.md).
 ## 13) Despliegue en Vercel (frontend)
 1. Importar el repositorio en Vercel.
 2. No necesitas cambiar comandos: el archivo [`vercel.json`](./vercel.json) de la raiz ya construye `frontend` automaticamente.
-3. Variables en Vercel:
-   - `NEXT_PUBLIC_API_URL` = URL publica del backend (no localhost).
+3. `NEXT_PUBLIC_API_URL` ya esta definida en `vercel.json`.
+   - Si tu backend usa otra URL, cambiala en Vercel Project Settings > Environment Variables.
 4. Deploy.
 
 ## 14) Restricciones de producto cumplidas
