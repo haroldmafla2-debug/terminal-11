@@ -132,6 +132,9 @@ Ver [docs/DEPLOY_VPS.md](./docs/DEPLOY_VPS.md).
    - Si tu backend usa otra URL, cambiala en Vercel Project Settings > Environment Variables.
 4. Deploy.
 
+Si aparece error con `cd frontend && npm install`, elimina los overrides en:
+`Settings > Build and Development Settings` y deja vacio `Install Command`.
+
 ## 14) Restricciones de producto cumplidas
 - Sin IA.
 - Sin chatbot.
