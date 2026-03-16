@@ -1,8 +1,8 @@
 {
   "version": 2,
   "framework": "nextjs",
-  "installCommand": "if [ -d frontend ]; then npm install --prefix frontend; else npm install; fi",
-  "buildCommand": "if [ -d frontend ]; then npm run build --prefix frontend; else npm run build; fi",
+  "installCommand": "npm install --prefix frontend",
+  "buildCommand": "npm run build --prefix frontend",
   "env": {
     "NEXT_PUBLIC_API_URL": "https://api.profe-harold-mafla.com"
   }
