@@ -1,0 +1,92 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: edu-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-edu_platform}
+      POSTGRES_USER: ${POSTGRES_USER:-edu_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-edu_pass}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-edu_user} -d ${POSTGRES_DB:-edu_platform}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    container_name: edu-redis
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    ports:
+      - "6379:6379"
+
+  runner:
+    build:
+      context: ./runner
+      dockerfile: Dockerfile
+    container_name: edu-runner
+    environment:
+      RUNNER_MAX_CODE_SIZE: ${RUNNER_MAX_CODE_SIZE:-5000}
+      RUNNER_TIMEOUT_SECONDS: ${RUNNER_TIMEOUT_SECONDS:-4}
+      RUNNER_MEMORY_MB: ${RUNNER_MEMORY_MB:-128}
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,noexec,nosuid
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 128
+    mem_limit: 256m
+    cpus: 0.5
+    networks:
+      - sandbox_net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: edu-backend
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-edu_user}:${POSTGRES_PASSWORD:-edu_pass}@postgres:5432/${POSTGRES_DB:-edu_platform}
+      REDIS_URL: redis://redis:6379/0
+      RUNNER_URL: http://runner:9000
+      CORS_ORIGINS: http://localhost:3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      runner:
+        condition: service_started
+    ports:
+      - "8000:8000"
+    networks:
+      - default
+      - sandbox_net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: edu-frontend
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+
+volumes:
+  postgres_data:
+
+networks:
+  sandbox_net:
+    internal: true

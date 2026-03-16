@@ -1,117 +1,139 @@
-# Portal Web Escolar
+# Profe Harold Mafla - Plataforma Escolar Python (sin IA)
 
-Portal Web Escolar is a production-ready platform for [COLEGIO], focused on academic operations and communication between admin, teachers, students, and guardians.
+Plataforma academica para colegio con editor Python en navegador, ejecucion segura en sandbox, autosave, envio de actividades y revision docente.
 
-## Current status
+## 1) Arquitectura del sistema
+Resumen: ver [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
 
-- Milestone: `PR2` (database schema + strict RLS + seed data).
-- Stack: Next.js (App Router) + TypeScript + Tailwind + shadcn/ui + Supabase.
+- `frontend` (Next.js): UI estudiante/profesor.
+- `backend` (FastAPI): auth, cursos, actividades, entregas, historial y auditoria.
+- `runner` (FastAPI): ejecucion aislada de Python.
+- `postgres`: persistencia.
+- `redis`: base para rate limiting.
 
-## Assumptions
+## 2) Stack final elegido
+- Frontend: Next.js + TypeScript + Monaco Editor.
+- Backend: FastAPI + SQLAlchemy.
+- DB: PostgreSQL.
+- Auth: JWT en cookies seguras HttpOnly.
+- Sandbox: runner aislado + limites de recursos + validacion AST.
+- Orquestacion local: Docker Compose.
 
-- School name: `[COLEGIO]`
-- Academic year: `2026`
-- Grade scale: `0.0` to `5.0`
-- Passing grade: `3.0`
-- Periods: `P1`, `P2`, `P3`, `P4`
+## 3) Arbol de carpetas
+```text
+.
++- backend/
+�  +- app/
+�  �  +- clients/
+�  �  +- core/
+�  �  +- db/
+�  �  +- routers/
+�  �  +- main.py
+�  �  +- models.py
+�  �  +- schemas.py
+�  �  +- utils.py
+�  +- migrations/001_init.sql
+�  +- tests/test_security.py
+�  +- Dockerfile
+�  +- requirements.txt
++- frontend/
+�  +- app/
+�  �  +- login/page.tsx
+�  �  +- student/page.tsx
+�  �  +- student/activity/[id]/page.tsx
+�  �  +- teacher/page.tsx
+�  �  +- globals.css
+�  �  +- layout.tsx
+�  +- lib/api.ts
+�  +- Dockerfile
+�  +- package.json
++- runner/
+�  +- app/main.py
+�  +- app/sandbox.py
+�  +- tests/test_sandbox.py
+�  +- Dockerfile
+�  +- requirements.txt
++- docs/
+�  +- ARCHITECTURE.md
+�  +- SECURITY.md
+�  +- DEPLOY_VPS.md
++- docker-compose.yml
++- .env.example
+```
 
-## Main structure
+## 4) Plan de implementacion por fases
+- Fase 1 (MVP): login, curso, actividad, editor Python, ejecutar, guardar, enviar, revision profesor.
+- Fase 2: historial de versiones y filtros avanzados.
+- Fase 3: reportes exportables y mejoras de auditoria.
+- Fase 4: modo examen (temporizador, copiar/pegar, fullscreen).
+- Fase 5: hardening final y despliegue VPS.
 
-- `src/app`: App Router pages (auth, dashboard, role modules).
-- `src/components`: UI and layout components.
-- `src/lib`: shared utils, auth guards, Supabase clients.
-- `src/services`: module services and zod validation.
-- `supabase/migrations`: SQL migrations.
-- `supabase/seed.sql`: initial seed for local/dev.
-- `tests/unit`: Vitest tests.
-- `tests/e2e`: Playwright smoke tests.
+## 5) MVP implementado
+- Login profesor/estudiante.
+- Crear curso.
+- Crear actividad.
+- Estudiante escribe Python en Monaco.
+- Ejecutar en sandbox aislado (servicio separado).
+- Guardar solucion (manual + autosave cada 15s).
+- Enviar actividad.
+- Profesor revisa entregas y salida.
 
-## Local setup
+## 6) API documentada
+Con backend arriba:
+- OpenAPI JSON: `http://localhost:8000/openapi.json`
+- Swagger UI: `http://localhost:8000/docs`
 
-1. Install dependencies:
-   - `npm install`
-2. Configure env:
-   - `copy .env.example .env.local`
-3. Run app:
-   - `npm run dev`
+## 7) Instalacion local paso a paso
+1. Copiar variables:
+```bash
+cp .env.example .env
+```
+2. Levantar plataforma:
+```bash
+docker compose up --build
+```
+3. Abrir:
+- Frontend: `http://localhost:3000`
+- Backend docs: `http://localhost:8000/docs`
 
-## Environment variables
+## 8) Datos de prueba
+Semilla automatica al iniciar backend:
+- `admin / Admin123*`
+- `profesor1 / Profesor123*`
+- `estudiante1 / Estudiante123*`
+- Curso inicial: `601-A`
 
-Defined in `.env.example`:
+## 9) Migraciones
+- Archivo inicial: `backend/migrations/001_init.sql`
+- En MVP, el backend crea tablas automaticamente al iniciar (`Base.metadata.create_all`).
 
-- `NEXT_PUBLIC_APP_NAME`
-- `NEXT_PUBLIC_SCHOOL_NAME`
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY` (server-only)
-- `ACADEMIC_YEAR`
-- `GRADE_SCALE_MIN`
-- `GRADE_SCALE_MAX`
-- `PASSING_GRADE`
+## 10) Tests minimos criticos
+- Backend: `backend/tests/test_security.py`
+- Runner: `runner/tests/test_sandbox.py`
 
-## Scripts
+## 11) Seguridad
+Detalle completo en [docs/SECURITY.md](./docs/SECURITY.md).
 
-- `npm run dev`
-- `npm run build`
-- `npm run start`
-- `npm run lint`
-- `npm run lint:fix`
-- `npm run typecheck`
-- `npm run format`
-- `npm run format:check`
-- `npm run test:unit`
-- `npm run test:e2e`
-- `npm run test`
+Controles MVP aplicados:
+- Roles y control de acceso por endpoints.
+- Codigo ejecutado fuera del backend principal.
+- Timeout, memoria, pids y CPU limitados en runner.
+- Bloqueo de imports peligrosos.
+- Limite de tamano de codigo.
+- Auditoria basica de acciones.
 
-## Supabase DB (PR2)
+## 12) Despliegue VPS
+Ver [docs/DEPLOY_VPS.md](./docs/DEPLOY_VPS.md).
 
-### Files
+## 13) Despliegue en Vercel (frontend)
+1. Importar el repositorio en Vercel.
+2. En la configuracion del proyecto, usar `frontend` como **Root Directory**.
+3. Variables en Vercel:
+   - `NEXT_PUBLIC_API_URL` = URL publica del backend (no localhost).
+4. Deploy.
 
-- Migration: `supabase/migrations/20260305220000_pr2_core_schema.sql`
-- Seed: `supabase/seed.sql`
-- Config: `supabase/config.toml`
-
-### Run migrations and seed (local CLI)
-
-1. `supabase start`
-2. `supabase db reset`
-
-`supabase db reset` applies all migrations and executes `supabase/seed.sql`.
-
-### Seed credentials (local/dev)
-
-All users use password `Password123*`:
-
-- Admin: `admin@colegio.local`
-- Coordination: `coordinacion@colegio.local`
-- Teacher: `docente@colegio.local`
-- Student: `estudiante@colegio.local`
-- Guardian: `acudiente@colegio.local`
-
-## Security model
-
-- Route/session protection in Next.js middleware.
-- Server-side validation with zod.
-- RLS with least-privilege policies per role.
-- RLS is the final authority for data access.
-
-## Branch and commit strategy
-
-- Main branches: `main`, `dev`
-- Feature branches: `codex/<scope>-<short-name>`
-- Conventional commits required
-
-## CI for pull requests
-
-Workflow in `.github/workflows/ci.yml` runs:
-
-- `npm ci`
-- `npm run lint`
-- `npm run test:unit`
-- `npm run test:e2e`
-- `npm run build`
-
-## Deployment
-
-- Frontend: Vercel
-- Backend: Supabase (Postgres, Auth, Storage, Edge Functions)
+## 14) Restricciones de producto cumplidas
+- Sin IA.
+- Sin chatbot.
+- Sin autocompletado inteligente.
+- Sin generacion automatica de codigo.
